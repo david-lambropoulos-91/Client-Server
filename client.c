@@ -1,23 +1,27 @@
 #include <sys/types.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
+#include <stdio.h>	/* for perror(), fprintf(), sprintf() */
+#include <stdlib.h>	/* for atoi() */
+#include <unistd.h>	/* for close() */
 #include <errno.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <netdb.h>
+#include <string.h>	/* for memset(), memcpy(), strlen() */
+#include <sys/socket.h> /* for sockaddr, socket(), connect(), recv(),
+			   send(), htonl(), htons() */
+#include <netdb.h>	/* for hostent, gethostbyname() */
 #include <pthread.h>
 #include <time.h>
 #include <netinet/in.h>
 #include <semaphore.h>
 #include <signal.h>
+#include <arpa/inet.h> /* for sockaddr_in */
+
+#include "client.h"
 
 int connect_to_server(const char* server, const char* port)
 {
 	int sd;	//socket device
 	struct addrinfo addrinfo;
 	struct addrinfo* result;
-	char message[256];
+	char message[RCVBUFSIZE];
 	char* func = "connect_to_server";
 
 	// Configure the addrinfo structure
@@ -61,9 +65,11 @@ int connect_to_server(const char* server, const char* port)
 	}
 }
 
+
+
 int main(int argc, char** argv)
 {
-	char message[256];
+	char message[RCVBUFSIZE];
 	char* func = "main";
 	int sd;
 	pthread_t tid;
