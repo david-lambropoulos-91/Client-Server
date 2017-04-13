@@ -16,12 +16,14 @@
 
 #include "client.h"
 
-int connect_to_server(const char* server, const char* port)
+static int sd;
+
+int connect_to_server( const char* server, const char* port )
 {
 	int sd;	//socket device
 	struct addrinfo addrinfo;
 	struct addrinfo* result;
-	char message[RCVBUFSIZE];
+	char message[ RCVBUFSIZE ];
 	char* func = "connect_to_server";
 
 	// Configure the addrinfo structure
@@ -65,45 +67,100 @@ int connect_to_server(const char* server, const char* port)
 	}
 }
 
-
-
-int main(int argc, char** argv)
+void* command_input_thread( void* arg )
 {
-	char message[RCVBUFSIZE];
+	char* func = "command_input_thread";
+	char string[ RCVBUFSIZE ];
+	char prompt[ ] = "";
+	int len;
+
+	pthread_detach( pthread_self( ) );
+
+	while( write( 1, prompt, sizeof( prompt ) ), ( len = read( 0, string, sizeof( string ) ) ) > 0 )
+	{
+		string[ len - 1 ] = '\0';
+		write( sd, string, strlen( string ) + 1 );
+
+		if( strcmp( string, "EXIT" ) == 0)
+		{
+			
+		}
+
+		sleep( 2 );	
+	}
+
+	return 0;
+}
+
+void* response_output_thread( void* arg )
+{
+	char* func = "response_output_thread";
+	char output[ RCVBUFSIZE ];
+	char buffer[ RCVBUFSIZE ];
+	char temp[ RCVBUFSIZE ];
+	int len;
+
+	pthread_detach( pthread_self(  ) );
+
+	while( len = read( sd, buffer, sizeof( buffer ) ), len >= 0 )
+	{
+		if( strcmp( buffer, "EXIT" ) == 0 )
+		{
+			strcpy( output, "\nGoodbye! :)\n\n" );
+			write( 1, output, strlen( output ) );
+			return 0;
+		}
+		
+		if( len == 0 )
+		{
+			sprintf( temp, "\x1b[1;31m\n\nServer has unexpectedly crashed! In file %s in function %s at line %d \n\n", __FILE__, func, __LINE__ );
+			ERR_EXIT( temp );
+		}
+
+		sprintf( output, "\nResult is >%s<\n", buffer );
+		write( 1, output, strlen( output ) );
+	}
+
+	return 0;
+}
+
+int main( int argc, char** argv )
+{
+	char message[ RCVBUFSIZE ];
+	char temp[ RCVBUFSIZE ];
 	char* func = "main";
-	int sd;
 	pthread_t tid;
 	pthread_attr_t kernel_attr;
 	
 	if( argc < 2 )
 	{
-		fprintf( stderr, "\x1b[1;31mNo host name specified. In file %s, in function %s at line %d.\x1b[0m\n", __FILE__, func, __LINE__);
-		exit( 1 );
+		sprintf( temp, "\x1b[1;31mNo host name specified. In file %s, in function %s at line %d.\x1b[0m\n", __FILE__, func, __LINE__ );
+		ERR_EXIT( temp );
 	}
 	else if( argc < 3 )
 	{
-		fprintf( stderr, "\x1b[1;31mNo port number specified. In file %s, in function %s at line %d.\x1b[0m\n", __FILE__, func, __LINE__ );
-		exit( 1 );
+		sprintf( temp, "\x1b[1;31mNo port number specified. In file %s, in function %s at line %d.\x1b[0m\n", __FILE__, func, __LINE__ );
+		ERR_EXIT( temp );
 	}
 	
 	if( pthread_attr_init( &kernel_attr ) != 0 )
 	{
-		fprintf( stderr, "\x1b[1;31mpthread_attr_init() failed in file %s in function %s at line %d.\x1b[0m\n", __FILE__, func, __LINE__ );
-		exit( 1 );	
+		sprintf( temp, "\x1b[1;31mpthread_attr_init() failed in file %s in function %s at line %d.\x1b[0m\n", __FILE__, func, __LINE__ );
+		ERR_EXIT( temp );	
 	}
 	else if( pthread_attr_setscope( &kernel_attr, PTHREAD_SCOPE_SYSTEM ) != 0 )
 	{
-		fprintf( stderr, "\x1b[1;31pthread_attr_setscope() failed in file %s in function %s at line %d.\x1b[0m\n", __FILE__, func, __LINE__ );
-		exit( 1 );
+		sprintf( temp, "\x1b[1;31pthread_attr_setscope() failed in file %s in function %s at line %d.\x1b[0m\n", __FILE__, func, __LINE__ );
+		ERR_EXIT( temp );
 	}
-	else if( ( sd = connect_to_server( argv[1], argv[2] ) ) == -1 )
+	else if( ( sd = connect_to_server( argv[ 1 ], argv[ 2 ] ) ) == -1 )
 	{
-		fprintf( stderr, "\x1b[1;31mCould not establish a connect to %s on port %s, in file %s, in function %s at line %d.\x1b[0m\n", argv[1], argv[2], __FILE__, func, __LINE__ );
-		exit( 1 );
+		sprintf( temp, "\x1b[1;31mCould not establish a connect to %s on port %s, in file %s, in function %s at line %d.\x1b[0m\n", argv[ 1 ], argv[ 2 ], __FILE__, func, __LINE__ );
+		ERR_EXIT( temp );
 	}
 	else
 	{
-		printf( "Connected to server %s on port %s", argv[1], argv[2] );	
+		printf( "Connected to server %s on port %s", argv[ 1 ], argv[ 2 ] );	
 	}
 
 	return 0;
