@@ -160,7 +160,20 @@ int main( int argc, char** argv )
 	}
 	else
 	{
-		printf( "Connected to server %s on port %s", argv[ 1 ], argv[ 2 ] );	
+		printf( "Connected to server %s on port %s", argv[ 1 ], argv[ 2 ] );
+		if (pthread_create(&tid, &kernel_attr, command_input_thread, 0) != 0 )
+		{
+			sprintf( temp, "\x1b[1;31mpthread_create() failed in file %s line %d\x1b[0m\n", __FILE__, __LINE__ );
+			ERR_EXIT( temp );
+		}
+		else if(pthread_create( &tid, &kernel_attr, response_output_thread, 0) != 0 )
+		{
+			sprintf( temp, "\x1b[1;31mpthread_create() failed in %s()\x1b[0m\n", func );
+			ERR_EXIT( temp );
+		}
+		pthread_exit( 0 );
+		close( sd );
+		return 0;	
 	}
 
 	return 0;

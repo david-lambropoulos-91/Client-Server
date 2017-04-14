@@ -117,11 +117,42 @@ void* periodic_action_cycle_thread( void* ignore )
 	return 0;
 }
 
-void* client_session_thread( void* args )
+void* client_session_thread( void* arg )
 {
 	int sd;
 	char request[ RCVBUFSIZE ];
 	char response[ RCVBUFSIZE ];
+	char* dummy;
+	char* temp;
+	sd = *(int*) arg;
+	free(arg);
+	pthread_detach( pthread_self() );		// Don't join on this thread
+
+	while ( read( sd, request, sizeof(request) ) > 0 )
+	{
+		printf( "server receives input:  %s\n", request );
+		
+		if(dummy = strtok(request," "), dummy == NULL)
+		{
+			strcpy(response, "NOTHING ENTERED");
+		}
+		else if(strcmp(dummy, "BOUNCE") == 0)
+		{
+			if(dummy = strtok(NULL," "), dummy == NULL)
+			{
+				strcpy(response, "NO ARGUMENTS PROVIDED TO CREATE");
+			}
+			else
+			{
+				while(temp = strtok(NULL, "\0"), temp != NULL)
+				{
+					sprintf(dummy, "%s %s", dummy, temp++);
+				}
+
+				printf("\n%s\n", dummy);
+			}
+		}
+	}
 
 	return 0;
 }
