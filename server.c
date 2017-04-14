@@ -128,18 +128,18 @@ void* client_session_thread( void* arg )
 	free(arg);
 	pthread_detach( pthread_self() );		// Don't join on this thread
 
-	if(connection_count == 0)
-	{
+//	if(connection_count == 0)
+//	{
 		pthread_mutex_lock( &mutex );
 		++connection_count;				// multiple clients protected access
 		pthread_mutex_unlock( &mutex );
-	}
-	else
-	{
-		pthread_mutex_lock( &mutex );
-		++waiting_to_connect;				// multiple clients protected access
-		pthread_mutex_unlock( &mutex );
-	}
+//	}
+//	else
+//	{
+//		pthread_mutex_lock( &mutex );
+///		++waiting_to_connect;				// multiple clients protected access
+//		pthread_mutex_unlock( &mutex );
+//	}
 
 	while ( read( sd, request, sizeof(request) ) > 0 )
 	{
@@ -223,6 +223,10 @@ void* client_session_thread( void* arg )
 		write(sd, response, strlen(response)+1);
 	}
 
+	pthread_mutex_lock( &mutex );
+	--connection_count;				// multiple clients protected access
+	pthread_mutex_unlock( &mutex );
+
 	return 0;
 }
 
@@ -269,6 +273,11 @@ int main(int argc, char** argv)
 	else
 	{
 		ic = sizeof( senderAddr );
+		
+		while(connection_count != 0)	
+		{
+			sleep(2);
+		}
 
 		while( ( fd = accept( sd, ( struct sockaddr * ) &senderAddr, &ic ) ) != -1 )
 		{
