@@ -128,6 +128,19 @@ void* client_session_thread( void* arg )
 	free(arg);
 	pthread_detach( pthread_self() );		// Don't join on this thread
 
+	if(connection_count == 0)
+	{
+		pthread_mutex_lock( &mutex );
+		++connection_count;				// multiple clients protected access
+		pthread_mutex_unlock( &mutex );
+	}
+	else
+	{
+		pthread_mutex_lock( &mutex );
+		++waiting_to_connect;				// multiple clients protected access
+		pthread_mutex_unlock( &mutex );
+	}
+
 	while ( read( sd, request, sizeof(request) ) > 0 )
 	{
 		printf( "server receives input:  %s\n", request );
@@ -140,7 +153,7 @@ void* client_session_thread( void* arg )
 		{
 			if(dummy = strtok(NULL," "), dummy == NULL)
 			{
-				strcpy(response, "NO ARGUMENTS PROVIDED TO CREATE");
+				strcpy(response, "NO ARGUMENTS PROVIDED TO BOUNCE");
 			}
 			else
 			{
@@ -148,10 +161,66 @@ void* client_session_thread( void* arg )
 				{
 					sprintf(dummy, "%s %s", dummy, temp++);
 				}
-
+				strcpy(response, dummy);
 				printf("\n%s\n", dummy);
 			}
 		}
+		else if(strcmp(dummy, "GET") == 0)
+		{
+			if(dummy = strtok(NULL," "), dummy == NULL)
+			{
+				strcpy(response, "NO ARGUMENTS PROVIDED TO GET");
+			}
+			else
+			{
+				printf("\n%s\n", dummy);
+				FILE *fp;
+				fp = fopen(dummy,"r");
+				size_t nread;
+
+				if(fp != NULL)
+				{
+					while(( nread = fread( response, 1, sizeof(response), fp ) ) > 0)
+					{
+						write(sd, response, strlen(response)+1);
+					}
+					if(ferror(fp))
+					{
+				
+					}	
+				}
+				else
+				{
+					strcpy(response, "FILE DOES NOT EXIST");
+				}
+			}
+				
+		}
+		else if(strcmp(dummy, "EXIT") == 0)
+		{
+			if( dummy = strtok( NULL, "\0" ), dummy == NULL )
+			{
+				strcpy(response, "EXIT");
+			}
+			else
+			{
+				while( temp = strtok( NULL, "\0" ), temp != NULL )
+				{
+					sprintf(dummy, "%s %s", dummy, temp++);
+				}
+				
+				//strcpy(response, dummy);		
+				printf("Exit message: %s\n", dummy);
+				//write( sd, response, strlen(response)+1);
+				sprintf(response, "EXIT");
+			}
+		}
+		else
+		{
+			sprintf(response, "Not a valid command!!!\n");
+		}
+
+		write(sd, response, strlen(response)+1);
 	}
 
 	return 0;

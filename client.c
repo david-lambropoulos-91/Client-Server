@@ -1,4 +1,5 @@
 #include <sys/types.h>
+
 #include <stdio.h>	/* for perror(), fprintf(), sprintf() */
 #include <stdlib.h>	/* for atoi() */
 #include <unistd.h>	/* for close() */
@@ -80,11 +81,15 @@ void* command_input_thread( void* arg )
 	{
 		string[ len - 1 ] = '\0';
 		write( sd, string, strlen( string ) + 1 );
-
-		if( strcmp( string, "EXIT" ) == 0)
+		
+		if( strstr( string, "EXIT" ) != NULL && strcmp(string,"EXIT") != 0)
 		{
-			
+//			char* token = strtok(string, " ");
+//			printf("%s\n", strtok(NULL, " "));
+			return 0;			
 		}
+	
+		//printf("asdfasdf\n");
 
 		sleep( 2 );	
 	}
@@ -104,10 +109,11 @@ void* response_output_thread( void* arg )
 
 	while( len = read( sd, buffer, sizeof( buffer ) ), len >= 0 )
 	{
-		if( strcmp( buffer, "EXIT" ) == 0 )
+		if( strstr( buffer, "EXIT" ) != NULL )
 		{
 			strcpy( output, "\nGoodbye! :)\n\n" );
 			write( 1, output, strlen( output ) );
+			
 			return 0;
 		}
 		
@@ -117,7 +123,8 @@ void* response_output_thread( void* arg )
 			ERR_EXIT( temp );
 		}
 
-		sprintf( output, "\nResult is >%s<\n", buffer );
+		//sprintf( output, "\nResult is >%s<\n", buffer );
+		sprintf( output, "\n%s\n", buffer );
 		write( 1, output, strlen( output ) );
 	}
 
@@ -160,7 +167,7 @@ int main( int argc, char** argv )
 	}
 	else
 	{
-		printf( "Connected to server %s on port %s", argv[ 1 ], argv[ 2 ] );
+		printf( "Connected to server %s on port %s\n", argv[ 1 ], argv[ 2 ] );
 		if (pthread_create(&tid, &kernel_attr, command_input_thread, 0) != 0 )
 		{
 			sprintf( temp, "\x1b[1;31mpthread_create() failed in file %s line %d\x1b[0m\n", __FILE__, __LINE__ );
