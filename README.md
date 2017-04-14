@@ -15,4 +15,10 @@ address in which to connect to and the port in which to connect on.
 
 	./client localhost 49660
 
+There are a few sample command such as 
 
+	BOUNCE <text>
+
+	GET <file.*>
+
+	EXIT <optional text>
